@@ -1,6 +1,6 @@
 # STMoE
  A new and efficient model for HAR.
- Authors:Haozhe Jing; Yize Xu and Yiou Pang.
+ Authors: Haozhe Jing; Yize Xu and Yiou Pang.
 
 
 # How to use
