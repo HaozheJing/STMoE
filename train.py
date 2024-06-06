@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
 from sklearn.metrics import f1_score, classification_report, confusion_matrix
 
-# Import custom modules
+# 导入本地模块
 from src.model.STMoE import STMoE
 from data.DataLoader import loadOpp, loadUCI, loadHAD, loadOpp17
 from src.hparams import get_args, Config  
@@ -30,7 +30,8 @@ def init_weights(m):
         if m.bias is not None:
             torch.nn.init.constant_(m.bias, 0)
 
-            
+
+#绘制损失
 def plot_loss(dataset, loss_history):
     plt.plot(loss_history, label='Training Loss')
     #plt.plot(smooth_loss_history, label='Smooth Training Loss')
@@ -41,20 +42,16 @@ def plot_loss(dataset, loss_history):
     plt.savefig('save/' + dataset + '/loss_plot.png')
     plt.close()            
 
-    
+
+#绘制混淆矩阵
 def plot_confusion_matrix(dataset, targets, outputs, class_names):
-    # 计算混淆矩阵
+    
     cm = confusion_matrix(targets, outputs)
-    
-    # 设置图像大小
     plt.figure(figsize=(15, 12))
-    
-    # 绘制热力图，调整字体大小
     heatmap = sns.heatmap(cm, annot=True, fmt='d', cmap='inferno_r',
                 xticklabels=class_names, yticklabels=class_names,
-                annot_kws={"size": 14})  # 调整注释数字的字体大小
+                annot_kws={"size": 14})  
     
-    # 设置轴标签和标题的字体大小
     plt.xlabel('Predicted labels', fontsize=22)
     plt.ylabel('True labels', fontsize=22)
     plt.xticks(fontsize=16)
@@ -64,15 +61,17 @@ def plot_confusion_matrix(dataset, targets, outputs, class_names):
     colorbar.ax.tick_params(labelsize=16)
     plt.tight_layout()
     
-    # 保存图像
     plt.savefig('save/' + dataset + '/confusion_matrix_heatmap.png')
     plt.close()
-    
+
+
+#用pth格式保存模型
 def save_model(model, save_path, dataset):
     os.makedirs(save_path, exist_ok=True)
     torch.save(model, os.path.join(save_path, dataset + '_model.pth'))
 
-    
+
+#训练函数    
 def train(model, optimizer, loss_function, train_loader, val_loader, test_loader, device, epochs):
     loss_history = []
     val_loss_history = []
@@ -98,11 +97,11 @@ def train(model, optimizer, loss_function, train_loader, val_loader, test_loader
 
         print(
             f"Epoch {epoch}: Training Loss {epoch_loss:.4f}, Validation Loss {epoch_val_loss:.4f}, Validation F1 {epoch_f1_score:.4f}")
-        targets, outputs = test(model, test_loader, loss_function, device)
         
     return loss_history, val_loss_history, val_f1_history
-    
 
+
+#验证
 def validate(model, val_loader, loss_function, device):
     model.eval()
     total_val_loss = 0
@@ -122,6 +121,8 @@ def validate(model, val_loader, loss_function, device):
     epoch_f1_score = f1_score(all_targets, all_outputs, average='macro')
     return epoch_val_loss, epoch_f1_score
 
+
+#测试
 def test(model, data_loader, loss_function, device):
     model.eval()
     test_loss = 0
@@ -143,6 +144,7 @@ def test(model, data_loader, loss_function, device):
     return np.concatenate(targets_list), np.concatenate(outputs_list)
 
 
+#加载数据集
 def get_data_loader(args: Config):
     if args.dataset == "OPP":
         load_function = loadOpp17
@@ -159,10 +161,6 @@ def get_data_loader(args: Config):
         load_function = loadUCI
         ACTIVITIES = ['WALKING', 'WALKING_UPSTAIRS', 'WALKING_DOWNSTAIRS', 'SITTING',  'STANDING',  'LAYING']
     
-    elif args.dataset == "SPHERE":
-        load_function = loadSPHERE
-        ACTIVITIES = ['a_ascend', 'a_descend', 'a_jump', 'a_loadwalk', 'a_walk', 'p_bent', 'p_kneel', 'p_lie', 'p_sit', 'p_squat', 'p_stand', 't_bend', 't_kneel_stand', 't_lie_sit', 
-                      't_sit_lie', 't_sit_stand', 't_stand_kneel', 'jt_stand_sit', 't_straighten', 't_turn']
         
     else:
         raise ValueError("Unsupported dataset")
@@ -176,6 +174,7 @@ def get_data_loader(args: Config):
     return train_loader, val_loader, test_loader, ACTIVITIES
 
 
+#主函数，加载参数
 def main():
     config = get_args()
     set_seed(config.seed)

@@ -58,11 +58,9 @@ if __name__ == "__main__":
 
     cmap = plt.get_cmap('tab20')
 
-    # Get all 20 colors from the colormap
     colors = cmap(np.arange(20))
 
-    # Randomly select 17 unique colors
-    np.random.seed(42)  # for reproducibility
+    np.random.seed(42)  
     selected_colors_indices = np.random.choice(20, 17, replace=False)
     colors = colors[selected_colors_indices]
     
@@ -70,7 +68,7 @@ if __name__ == "__main__":
         indices = labels == i
         plt.scatter(embeddings_2d[indices, 0], embeddings_2d[indices, 1], c=color, s=5, label=f'Class {i}')
 
-    plt.axis('off')  # 移除边框
+    plt.axis('off') 
     plt.savefig('save/OPP/TSNE_Embed.png')
     print("Embeddings visualization saved as 'TSNE_Embed.png'")
 
@@ -87,6 +85,6 @@ if __name__ == "__main__":
         indices = labels == i
         plt.scatter(features_2d[indices, 0], features_2d[indices, 1], c=color, s=5, label=f'Class {i}')
 
-    plt.axis('off')  # 移除边框
+    plt.axis('off') 
     plt.savefig('save/OPP/TSNE_Input_Features.png')
     print("Input features visualization saved as 'TSNE_Input_Features.png'")

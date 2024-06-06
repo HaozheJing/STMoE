@@ -43,11 +43,11 @@ class MoE(nn.Module):
         self.expert_outputs_data = None
     
     def get_gating_data(self):
-        """ 返回门控数据 """
+        """ 返回门控数据，绘图用 """
         return self.gating_data
 
     def get_expert_outputs_data(self):
-        """ 返回专家网络输出数据 """
+        """ 返回专家网络输出数据，绘图用 """
         return self.expert_outputs_data
 
     def forward(self, inputs):
@@ -62,7 +62,6 @@ class MoE(nn.Module):
             "top_experts": {"index_1": index_1, "index_2": index_2}
         }
         
-        # Now feed the expert inputs through the experts.
         orig_shape = expert_inputs.shape
         expert_inputs = expert_inputs.reshape(e, -1, d)
         expert_outputs = self.experts(expert_inputs)

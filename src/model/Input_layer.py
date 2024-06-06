@@ -7,12 +7,9 @@ from .Attention import MultiHeadAttention
 
 
 def clones(module, N):
-    # module: 代表要克隆的目标网络层
-    # N: 将module克隆几个
     return nn.ModuleList([copy.deepcopy(module) for _ in range(N)])
 
 
-# 引入位置编码
 class PositionalEncoding(nn.Module):
     def __init__(self, d_model, dropout=0.1, max_len=5000):
         super(PositionalEncoding, self).__init__()
@@ -23,7 +20,6 @@ class PositionalEncoding(nn.Module):
         div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
 
         pe[:, 0::2] = torch.sin(position * div_term)
-        # 对余弦部分进行相应的修改以适应奇数维度
         pe[:, 1::2] = torch.cos(position * div_term[:d_model // 2])
 
         pe = pe.unsqueeze(0).transpose(0, 1)
@@ -53,12 +49,7 @@ class TimeAttention(nn.Module):
         self.multi_head_attention = MultiHeadAttention(time_dim, time_heads)
 
     def forward(self, x):
-        # Transpose for multi-head attention
-        # x = x.transpose(1, 2)  # Now: batch_size x sensor_dim x time_window
         attention = self.multi_head_attention(x, x, x)
-
-        # Transpose back
-        # attention = attention.transpose(1, 2)  # Now: batch_size x time_window x sensor_dim
         return attention
 
 
@@ -71,7 +62,6 @@ class SublayerConnection(nn.Module):
         self.alpha = nn.Parameter(torch.ones(1))
 
     def forward(self, x, sublayer):
-        # 将LayerNorm移到子层前面，并引入参数化残差连接
         return x + self.alpha * self.dropout(sublayer(self.norm(x)))
 
 
@@ -86,14 +76,9 @@ class EncoderLayer(nn.Module):
 
     def forward(self, x):
         x = x.transpose(1, 2)
-
         x = self.sublayer2(x, self.time_attention)
-
         x = x.transpose(1, 2)
-
         x = self.sublayer1(x, self.sensor_attention)
-
-        # 注意在时间注意力前后进行维度转换
 
         return x
 

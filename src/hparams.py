@@ -47,7 +47,7 @@ class Config:
 
 def get_args() -> Config:
     parser = argparse.ArgumentParser(description="Run the STMoE model for activity recognition.")
-    # hyper-parameters
+    # 基础超参数
     parser.add_argument('--epochs', type=int, default=24, help='Number of epochs to train.')
     parser.add_argument('--lr', type=float, default=0.005, help='Learning rate for the optimizer.')
     parser.add_argument('--batch_size', type=int, default=128, help='Batch size for training and testing.')
@@ -55,13 +55,13 @@ def get_args() -> Config:
     parser.add_argument('--step_size', type=int, default=1, help='Step size for the sliding window operation.')
     parser.add_argument('--seed', type=int, default=32, help='Random seed for reproducibility.')
     
-    # basic-parameters
+    # 功能性超参数
     parser.add_argument('--plot_train_loss', action='store_true', help='Save training loss plot in save folder')
     parser.add_argument('--plot_confusion_matrix', action='store_true', help='Save confusion matrix plot in save folder')
     parser.add_argument('--save_model', action='store_true', help='Save model parameters')
     parser.add_argument('--save_path', type=str, default='save/model', help='Path to save model parameters')
 
-    # data-parameters
+    # 数据相关超参数
     parser.add_argument('--dataset', type=str, required=True, choices=['UCI', 'OPP', 'HAD'],
                         help='Dataset name to use.')
     parser.add_argument('--path', type=str, default='data/',
@@ -69,7 +69,7 @@ def get_args() -> Config:
                         train, val and test.Each folder should include 2 folders named input and label')
     parser.add_argument('--num_classes', type=int, required=True, help='Number of classes for classification.')
 
-    # model-parameters
+    # 模型各个模块超参数
     parser.add_argument('--sensor_dim', type=int, help='Dimension of sensor data input.')
     parser.add_argument('--time_dim', type=int, help='Temporal dimension of the input data.')
     parser.add_argument('--num_input_layer', type=int, default=1,

@@ -14,21 +14,18 @@ CONFIG = get_args()
 class TimeWeightedSum(nn.Module):
     def __init__(self, time_window):
         super(TimeWeightedSum, self).__init__()
-        # 初始化权重，递减
         self.weights = nn.Parameter(torch.linspace(1, 0, steps=time_window))
 
     def forward(self, x):
-        # x: batch_size x time_window x features
-        weights = self.weights.unsqueeze(0).unsqueeze(-1)  # 对应扩展维度以便广播
-        weighted_x = x * weights  # 加权
-        summed_x = torch.sum(weighted_x, dim=1)  # 沿时间维度求和
+        weights = self.weights.unsqueeze(0).unsqueeze(-1) 
+        weighted_x = x * weights  
+        summed_x = torch.sum(weighted_x, dim=1)  
         return summed_x
     
 
 class STMoE(nn.Module):
     """
-    Spatial Temporal Mixture of Experts (STMoE) Model.
-    This model combines multiple neural network components to process time-series data from sensors.
+    STMoE类实现方法，把前面所有模块进行拼接
     """
     def __init__(self, config: Config):
         super(STMoE, self).__init__()
@@ -61,15 +58,6 @@ class STMoE(nn.Module):
         return self.moe_block.get_expert_outputs_data()
 
     def forward(self, x):
-        """
-        Forward pass of the STMoE model.
-
-        Args:
-            x (Tensor): Input tensor of shape (Batch_size, Time_window, Sensor_features).
-
-        Returns:
-            Tensor: Output tensor of the model.
-        """
         x, _ = self.sensor_preprocessing(x)
         x = x.transpose(1, 2)
         x = self.dimension_reducer(x)

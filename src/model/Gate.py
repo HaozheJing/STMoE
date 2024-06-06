@@ -4,12 +4,10 @@ import torch.nn.functional as F
 
 MIN_EXPERT_CAPACITY = 4
 
-
 def top1(t):
     values, index = t.topk(k=1, dim=-1)
     values, index = map(lambda x: x.squeeze(dim=-1), (values, index))
     return values, index
-
 
 def cumsum_exclusive(t, dim=-1):
     num_dims = len(t.shape)
@@ -19,13 +17,12 @@ def cumsum_exclusive(t, dim=-1):
     padded_t = F.pad(t, (*pre_padding, 1, 0)).cumsum(dim=dim)
     return padded_t[(..., slice(None, -1), *pre_slice)]
 
-
 def safe_one_hot(indexes, max_length):
     max_index = indexes.max() + 1
     return F.one_hot(indexes, max(max_index + 1, max_length))[..., :max_length]
 
-
 class Top2Gating(nn.Module):
+    """门控网络的实现，TOP2门控"""
     def __init__(
             self,
             dim,
@@ -68,9 +65,7 @@ class Top2Gating(nn.Module):
         raw_gates = torch.einsum('...bnd,...de->...bne', x, self.w_gating)
         raw_gates = raw_gates.softmax(dim=-1)
 
-        # FIND TOP 2 EXPERTS PER POSITON
-        # Find the top expert for each position. shape=[batch, group]
-
+        # 查找每个位置的前2个专家[batch, group]
         gate_1, index_1 = top1(raw_gates)
         mask_1 = F.one_hot(index_1, num_gates).float()
         density_1_proxy = raw_gates
@@ -92,21 +87,17 @@ class Top2Gating(nn.Module):
             mask_2 *= greater_zero_mask[..., None]
             del greater_zero_mask
 
-        # normalize top2 gate scores
+        # 归一化前2个gate分数
         denom = gate_1 + gate_2 + self.eps
         gate_1 /= denom
         gate_2 /= denom
 
-        # BALANCING LOSSES
-        # shape = [batch, experts]
-        # We want to equalize the fraction of the batch assigned to each expert
+        # 平衡损失[batch, experts]
         density_1 = mask_1.mean(dim=-2)
-        # Something continuous that is correlated with what we want to equalize.
         density_1_proxy = density_1_proxy.mean(dim=-2)
         loss = (density_1_proxy * density_1).mean() * float(num_gates ** 2)
 
-        # Depending on the policy in the hparams, we may drop out some of the
-        # second-place experts.
+        # 根据超参数中的策略
         if policy == "all":
             pass
         elif policy == "none":
@@ -117,28 +108,19 @@ class Top2Gating(nn.Module):
             probs = torch.zeros_like(gate_2).uniform_(0., 1.)
             mask_2 *= (probs < (gate_2 / max(threshold, self.eps))).float().unsqueeze(-1)
         else:
-            raise ValueError(f"Unknown policy {policy}")
+            raise ValueError(f"未知策略 {policy}")
 
-        # Each sequence sends (at most?) expert_capacity positions to each expert.
-        # Static expert_capacity dimension is needed for expert batch sizes
         expert_capacity = min(group_size, int((group_size * capacity_factor) / num_gates))
         expert_capacity = max(expert_capacity, MIN_EXPERT_CAPACITY)
         expert_capacity_f = float(expert_capacity)
 
-        # COMPUTE ASSIGNMENT TO EXPERTS
-        # [batch, group, experts]
-        # This is the position within the expert's mini-batch for this sequence
+        # 计算分配给专家 [batch, group, experts]
         position_in_expert_1 = cumsum_exclusive(mask_1, dim=-2) * mask_1
-        # Remove the elements that don't fit. [batch, group, experts]
         mask_1 *= (position_in_expert_1 < expert_capacity_f).float()
-        # [batch, experts]
-        # How many examples in this sequence go to this expert
         mask_1_count = mask_1.sum(dim=-2, keepdim=True)
-        # [batch, group] - mostly ones, but zeros where something didn't fit
         mask_1_flat = mask_1.sum(dim=-1)
-        # [batch, group]
         position_in_expert_1 = position_in_expert_1.sum(dim=-1)
-        # Weight assigned to first expert.  [batch, group]
+        # 分配给第一个专家的权重[batch, group]
         gate_1 *= mask_1_flat
 
         position_in_expert_2 = cumsum_exclusive(mask_2, dim=-2) + mask_1_count

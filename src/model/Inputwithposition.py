@@ -5,9 +5,9 @@ import math
 from .Attention import MultiHeadAttention
 
 
+# 这个文件基本上没用到！因为这几个数据集没有可以查询的位置传感器
+
 def clones(module, N):
-    # module: 代表要克隆的目标网络层
-    # N: 将module克隆几个
     return nn.ModuleList([copy.deepcopy(module) for _ in range(N)])
 
 
@@ -31,8 +31,7 @@ class PositionalEncoding(nn.Module):
 
 class ConditionAttention(nn.Module):
     def __init__(self, embed_size, heads, position_dim, position_indexes):
-        # positon_dim: 打算嵌入的维度
-
+        # positon_dim: 嵌入的维度
         super(ConditionAttention, self).__init__()
         self.embed_size = embed_size
         self.position_indexes = position_indexes
@@ -52,7 +51,6 @@ class ConditionAttention(nn.Module):
         self.keys = nn.Linear(self.head_dim, self.head_dim, bias=False)
         self.queries = nn.Linear(self.head_dim + int(self.position_dim / self.heads), self.head_dim, bias=False)
 
-        # 用于位置信息的线性层，输入维度为20（独热编码的大小），输出维度为position_dim
         self.position_embedding = nn.Linear(self.position_indexes, self.position_dim, bias=False)
 
         self.fc_out = nn.Linear(heads * self.head_dim, embed_size)
@@ -60,12 +58,8 @@ class ConditionAttention(nn.Module):
     def forward(self, values, keys, query, position):
         N = query.shape[0]
         value_len, key_len, query_len = values.shape[1], keys.shape[1], query.shape[1]
-
-        # 通过线性层转换独热编码的位置信息，这里position假设已经是N x query_len x 20
-        position_embeddings = self.position_embedding(position)  # 结果形状将是 N x query_len x position_dim
-
-        queries_with_position = torch.cat((query, position_embeddings), dim=2)  # 正确的拼接
-        # 接下来，根据头的数量分割queries_with_position，然后对values和keys做相应操作
+        position_embeddings = self.position_embedding(position)  
+        queries_with_position = torch.cat((query, position_embeddings), dim=2)  
         values = values.reshape(N, value_len, self.heads, self.head_dim)
         keys = keys.reshape(N, key_len, self.heads, self.head_dim)
         queries_with_position = queries_with_position.reshape(N, query_len, self.heads,
@@ -75,7 +69,6 @@ class ConditionAttention(nn.Module):
         keys = self.keys(keys)
         queries = self.queries(queries_with_position)
 
-        # 后续步骤与之前相同
         energy = torch.einsum("nqhd,nkhd->nhqk", [queries, keys])
         attention = torch.softmax(energy / (self.embed_size ** (1 / 2)), dim=3)
 
@@ -89,7 +82,6 @@ class ConditionAttention(nn.Module):
 class SensorAttention(nn.Module):
     def __init__(self, sensor_dim, sensor_heads, position_dim, position_indexes):
         super(SensorAttention, self).__init__()
-        # 注意新增了position_dim参数
         self.multi_head_attention = ConditionAttention(sensor_dim, sensor_heads, position_dim, position_indexes)
 
     def forward(self, x, position_indexes):
@@ -100,7 +92,6 @@ class SensorAttention(nn.Module):
 class TimeAttention(nn.Module):
     def __init__(self, time_dim, time_heads):
         super(TimeAttention, self).__init__()
-        # 注意新增了position_dim参数
         self.multi_head_attention = MultiHeadAttention(time_dim, time_heads)
 
     def forward(self, x):
@@ -113,12 +104,9 @@ class SublayerConnection(nn.Module):
         super(SublayerConnection, self).__init__()
         self.norm = nn.LayerNorm(size)
         self.dropout = nn.Dropout(p=dropout)
-
-        # 参数化残差连接
         self.alpha = nn.Parameter(torch.ones(1))
 
     def forward(self, x, sublayer):
-        # 将LayerNorm移到子层前面，并引入参数化残差连接
         return x + self.alpha * self.dropout(sublayer(self.norm(x)))
 
 
@@ -132,9 +120,9 @@ class EncoderLayer(nn.Module):
 
     def forward(self, x, position_indexes):
         x = self.sublayer1(x, lambda _x: self.sensor_attention(_x, position_indexes))
-        x = x.transpose(1, 2)  # 维度转换
+        x = x.transpose(1, 2) 
         x = self.sublayer2(x, lambda _x: self.time_attention(_x))
-        x = x.transpose(1, 2)  # 维度转换回来
+        x = x.transpose(1, 2)  
         return x
 
 

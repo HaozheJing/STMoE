@@ -56,13 +56,12 @@ if __name__ == "__main__":
 
     plt.figure(figsize=(10, 8))
 
-    # Get all 20 colors from the colormap
     colors = ['darkred', 'gold', 'green', 'c', 'm', 'cyan']
     for i, color in enumerate(colors):
         indices = labels == i
         plt.scatter(embeddings_2d[indices, 0], embeddings_2d[indices, 1], c=color, s=5, label=f'Class {i}')
 
-    plt.axis('off')  # 移除边框
+    plt.axis('off')  
     plt.savefig('save/UCI/TSNE_Embed.png')
     print("Embeddings visualization saved as 'TSNE_Embed.png'")
 
@@ -79,6 +78,6 @@ if __name__ == "__main__":
         indices = labels == i
         plt.scatter(features_2d[indices, 0], features_2d[indices, 1], c=color, s=5, label=f'Class {i}')
 
-    plt.axis('off')  # 移除边框
+    plt.axis('off')  
     plt.savefig('save/UCI/TSNE_Input_Features.png')
     print("Input features visualization saved as 'TSNE_Input_Features.png'")

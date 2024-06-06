@@ -3,6 +3,7 @@ import torch.nn as nn
 
 
 class MultiHeadAttention(nn.Module):
+    """多头自注意力机制的实现"""
     def __init__(self, embed_size, heads):
         super(MultiHeadAttention, self).__init__()
         self.embed_size = embed_size
@@ -54,6 +55,9 @@ class MultiHeadAttention(nn.Module):
 
 
 class AttentionWithContext(nn.Module):
+    """
+    没有用这个，这是参考以前学者的一个实现。
+    """
     def __init__(self, input_dim, bias=True, return_attention=False):
         super(AttentionWithContext, self).__init__()
         self.input_dim = input_dim
@@ -65,25 +69,22 @@ class AttentionWithContext(nn.Module):
         if bias:
             self.b = nn.Parameter(torch.Tensor(input_dim))
 
-        # Initializing weights
         nn.init.xavier_uniform_(self.W)
-        nn.init.uniform_(self.u, -0.1, 0.1)  # Use uniform initialization for vector 'u'
+        nn.init.uniform_(self.u, -0.1, 0.1)  
         if bias:
             nn.init.zeros_(self.b)
 
     def forward(self, x):
-        # Linear part + nonlinearity
+        
         uit = torch.tensordot(x, self.W, dims=([-1], [0]))
         if self.bias:
             uit += self.b
         uit = torch.tanh(uit)
 
-        # Attention mechanism
         ait = torch.tensordot(uit, self.u, dims=([-1], [0]))
         a = torch.exp(ait)
         a = a / (torch.sum(a, dim=1, keepdim=True) + 1e-10)
 
-        # Weighted sum
         weighted_input = x * a.unsqueeze(-1)
         result = torch.sum(weighted_input, dim=1)
 

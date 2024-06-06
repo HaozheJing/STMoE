@@ -22,17 +22,16 @@ dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
 example_inputs, _ = next(iter(dataloader))
 example_inputs = example_inputs.to(device)
 
-# 计算模型的 MACs（乘累加操作数）
+# 计算模型的 MACs
 model.eval()
 with torch.no_grad():
     macs = profile_macs(model, example_inputs)
-    flops = 2 * macs  # 1 MAC = 2 FLOPs（乘法和加法）
+    flops = 2 * macs 
 print(f"Model FLOPs: {flops}")
 
 # 计算 FLOPs
 print("Calculating model FLOPs...")
-# 使用 torchinfo 的 summary 来展示模型信息，包括 FLOPs
-summary(model, input_size=(batch_size, 128, 9))  # 请替换为实际输入尺寸
+summary(model, input_size=(batch_size, 128, 9)) 
 
 # 计算推理速度
 print("Measuring inference speed...")
